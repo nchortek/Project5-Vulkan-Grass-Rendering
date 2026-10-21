@@ -9,6 +9,9 @@ layout(set = 0, binding = 0) uniform CameraBufferObject {
 } camera;
 
 // TODO: Declare tessellation control shader inputs and outputs
+in gl_PerVertex {
+    vec4 gl_Position;
+} gl_in[gl_MaxPatchVertices];
 
 void main() {
 	// Don't move the origin location of the patch
