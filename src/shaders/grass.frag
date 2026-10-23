@@ -22,6 +22,6 @@ void main() {
     lambertFactor = (lambertFactor * 0.5) + 0.5;
     lambertFactor = lambertFactor * lambertFactor;
     float lightFactor = (1.0 - AMBIENT) * lambertFactor + AMBIENT * fsAO;
-    vec3 col = vec3(0.0, 1.0, 0.0) * lightFactor;
+    vec3 col = vec3(0.33, 0.87, 0.46) * lightFactor;
     outColor = vec4(col, 1.0);
 }

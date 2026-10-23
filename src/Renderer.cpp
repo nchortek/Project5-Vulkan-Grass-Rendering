@@ -1064,7 +1064,8 @@ void Renderer::RecordComputeCommandBuffer() {
             0,
             nullptr);
 
-        vkCmdDispatch(computeCommandBuffer, NUM_BLADES / WORKGROUP_SIZE, 1, 1);
+        uint32_t workgroupCount = (NUM_BLADES + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE;
+        vkCmdDispatch(computeCommandBuffer, workgroupCount, 1, 1);
     }
 
     // ~ End recording ~
