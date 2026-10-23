@@ -21,6 +21,8 @@ layout(location = 0) out vec4 outV1[];
 layout(location = 1) out vec4 outV2[];
 layout(location = 2) out vec4 outUp[];
 
+const float TESS_LEVEL = 8.0;
+
 void main() {
 	// Don't move the origin location of the patch
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
@@ -31,11 +33,11 @@ void main() {
     outUp[gl_InvocationID] = inUp[gl_InvocationID];
 
 	// TODO: Set level of tesselation
-    gl_TessLevelInner[0] = 1.0;
-    gl_TessLevelInner[1] = 1.0;
+    gl_TessLevelInner[0] = TESS_LEVEL;
+    gl_TessLevelInner[1] = TESS_LEVEL;
 
-    gl_TessLevelOuter[0] = 1.0;
-    gl_TessLevelOuter[1] = 1.0;
-    gl_TessLevelOuter[2] = 1.0;
-    gl_TessLevelOuter[3] = 1.0;
+    gl_TessLevelOuter[0] = TESS_LEVEL;
+    gl_TessLevelOuter[1] = TESS_LEVEL;
+    gl_TessLevelOuter[2] = TESS_LEVEL;
+    gl_TessLevelOuter[3] = TESS_LEVEL;
 }
