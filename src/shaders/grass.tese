@@ -16,7 +16,7 @@ layout(location = 2) in vec4 inUp[];
 layout(location = 0) out vec3 fsNor;
 layout(location = 1) out float fsAO;
 
-const vec3 zAxis = vec3(0.0, 0.0, 1.0);
+const vec3 Z_AXIS = vec3(0.0, 0.0, 1.0);
 
 void main() {
     vec4 inV0 = gl_in[0].gl_Position;
@@ -34,7 +34,7 @@ void main() {
     vec3 b = v1 + v * (v2 - v1);
     vec3 c = a + v * (b - a);
 
-    vec3 planeX = normalize(cross(inUp[0].xyz, zAxis));
+    vec3 planeX = normalize(cross(inUp[0].xyz, Z_AXIS));
     vec3 planeZ = normalize(cross(planeX, inUp[0].xyz));
     vec3 t1 = (cos(orientation) * planeX) + (sin(orientation) * planeZ);
     vec3 c0 = c - width * t1;
