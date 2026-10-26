@@ -57,10 +57,6 @@ const float GRAVITY_INTENSITY = 9.8;
 const vec3 WIND_DIR = normalize(vec3(1.33, 0.0, 0.66));
 const float WIND_INTENSITY = 10.0;
 
-bool inBounds(float value, float bounds) {
-    return (value >= -bounds) && (value <= bounds);
-}
-
 vec2 random2(vec2 p)
 {
     return fract(
@@ -166,6 +162,23 @@ void main() {
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+    bool shouldRender = true;
+
+    // Cull based on alignment with view dir
+    vec3 camPos = -transpose(mat3(camera.view)) * camera.view[3].xyz;
+    shouldRender = shouldRender && (0.9 > abs(dot(normalize(blade.v0.xyz - camPos), t1)));
+
+    // Cull based on view frustum
+    vec4 m = vec4((0.25 * blade.v0.xyz) + (0.5 * blade.v1.xyz) + (0.25 * blade.v2.xyz), 1.0);
+    m = camera.proj * camera.view * m;
+    vec4 v0p = camera.proj * camera.view * vec4(blade.v0.xyz, 1.0);
+    vec4 v2p = camera.proj * camera.view * vec4(blade.v2.xyz, 1.0);
+    shouldRender = shouldRender
+        && !(any(greaterThan(abs(v0p).xyz, vec3(v0p.w + 0.5)))
+            && any(greaterThan(abs(v2p).xyz, vec3(v2p.w + 0.5)))
+            && any(greaterThan(abs(m).xyz, vec3(m.w + 0.5)))); 
+
+    // Cull based on distance
 
     uint bladeIdx = atomicAdd(numBlades.vertexCount, 1u);
     culledBlades.blades[bladeIdx] = blade;
