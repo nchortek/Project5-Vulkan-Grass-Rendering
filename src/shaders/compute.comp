@@ -53,9 +53,11 @@ layout(set = 2, binding = 2) buffer NumBlades {
 
 const vec3 Z_AXIS = vec3(0.0, 0.0, 1.0);
 const vec3 GRAVITY_DIR = vec3(0.0, -1.0, 0.0);
-const float GRAVITY_INTENSITY = 9.8;
+const float GRAVITY_INTENSITY = 7.0;
 const vec3 WIND_DIR = normalize(vec3(1.33, 0.0, 0.66));
 const float WIND_INTENSITY = 10.0;
+const float MAX_DIST = 50.0;
+const uint BUCKET_COUNT = 8u;
 
 vec2 random2(vec2 p)
 {
@@ -145,6 +147,8 @@ void main() {
 
     // Update position
     blade.v2.xyz += totalForce * deltaTime;
+
+    // Handle invalid states
     blade.v2.xyz -= blade.up.xyz * min(dot(blade.up.xyz, blade.v2.xyz - blade.v0.xyz), 0.0);
     displ = blade.v2.xyz - blade.v0.xyz;
     float lproj = length(displ - (blade.up.xyz * (dot(displ, blade.up.xyz))));
@@ -165,8 +169,8 @@ void main() {
     bool shouldRender = true;
 
     // Cull based on alignment with view dir
-    vec3 camPos = -transpose(mat3(camera.view)) * camera.view[3].xyz;
-    shouldRender = shouldRender && (0.9 > abs(dot(normalize(blade.v0.xyz - camPos), t1)));
+    vec3 viewDir = blade.v0.xyz + transpose(mat3(camera.view)) * camera.view[3].xyz;
+    shouldRender = shouldRender && (0.9 > abs(dot(normalize(viewDir), t1)));
 
     // Cull based on view frustum
     vec4 m = vec4((0.25 * blade.v0.xyz) + (0.5 * blade.v1.xyz) + (0.25 * blade.v2.xyz), 1.0);
@@ -179,6 +183,15 @@ void main() {
             && any(greaterThan(abs(m).xyz, vec3(m.w + 0.5)))); 
 
     // Cull based on distance
+    float dProj = length(viewDir - (blade.up.xyz * dot(viewDir, blade.up.xyz)));
+    shouldRender = shouldRender
+        && (gl_GlobalInvocationID.x % BUCKET_COUNT
+            < uint(max(float(BUCKET_COUNT) * (1.0 - (dProj / MAX_DIST)), 0.0)));
+
+    if (!shouldRender)
+    {
+        return;
+    }
 
     uint bladeIdx = atomicAdd(numBlades.vertexCount, 1u);
     culledBlades.blades[bladeIdx] = blade;
