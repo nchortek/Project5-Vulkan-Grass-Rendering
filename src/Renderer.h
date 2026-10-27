@@ -32,6 +32,7 @@ public:
     void CreateGrassPipeline();
     void CreateComputePipeline();
 
+    void CreateSyncResources();
     void CreateFrameResources();
     void DestroyFrameResources();
     void RecreateFrameResources();
@@ -82,4 +83,7 @@ private:
 
     std::vector<VkCommandBuffer> commandBuffers;
     VkCommandBuffer computeCommandBuffer;
+
+    VkSemaphore computeSemaphore;
+    VkFence frameFinishedFence;
 };

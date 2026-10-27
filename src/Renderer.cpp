@@ -27,6 +27,7 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     CreateGrassDescriptorSets();
     CreateTimeDescriptorSet();
     CreateComputeDescriptorSets();
+    CreateSyncResources();
     CreateFrameResources();
     CreateGraphicsPipeline();
     CreateGrassPipeline();
@@ -892,6 +893,25 @@ void Renderer::CreateComputePipeline() {
     vkDestroyShaderModule(logicalDevice, computeShaderModule, nullptr);
 }
 
+void Renderer::CreateSyncResources()
+{
+    VkSemaphoreCreateInfo semaphoreInfo = {};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &computeSemaphore) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create semaphore");
+    }
+
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &frameFinishedFence) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create fence.");
+    }
+}
+
 void Renderer::CreateFrameResources() {
     imageViews.resize(swapChain->GetCount());
 
@@ -1180,6 +1200,10 @@ void Renderer::RecordCommandBuffers() {
 }
 
 void Renderer::Frame() {
+    if (!swapChain->Acquire()) {
+        RecreateFrameResources();
+        return;
+    }
 
     VkSubmitInfo computeSubmitInfo = {};
     computeSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1187,22 +1211,29 @@ void Renderer::Frame() {
     computeSubmitInfo.commandBufferCount = 1;
     computeSubmitInfo.pCommandBuffers = &computeCommandBuffer;
 
+    VkSemaphore computeSignalSemaphores[] = { computeSemaphore };
+    computeSubmitInfo.signalSemaphoreCount = 1;
+    computeSubmitInfo.pSignalSemaphores = computeSignalSemaphores;
+
     if (vkQueueSubmit(device->GetQueue(QueueFlags::Compute), 1, &computeSubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit draw command buffer");
     }
 
-    if (!swapChain->Acquire()) {
-        RecreateFrameResources();
-        return;
-    }
+    vkResetFences(logicalDevice, 1, &frameFinishedFence);
 
     // Submit the command buffer
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = { swapChain->GetImageAvailableVkSemaphore() };
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    submitInfo.waitSemaphoreCount = 1;
+    VkSemaphore waitSemaphores[] = { 
+        swapChain->GetImageAvailableVkSemaphore(),
+        computeSemaphore
+    };
+    VkPipelineStageFlags waitStages[] = { 
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+    };
+    submitInfo.waitSemaphoreCount = 2;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
 
@@ -1213,13 +1244,15 @@ void Renderer::Frame() {
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(device->GetQueue(QueueFlags::Graphics), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+    if (vkQueueSubmit(device->GetQueue(QueueFlags::Graphics), 1, &submitInfo, frameFinishedFence) != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit draw command buffer");
     }
 
     if (!swapChain->Present()) {
         RecreateFrameResources();
     }
+
+    vkWaitForFences(logicalDevice, 1, &frameFinishedFence, VK_TRUE, UINT64_MAX);
 }
 
 Renderer::~Renderer() {
@@ -1246,6 +1279,8 @@ Renderer::~Renderer() {
     vkDestroyDescriptorPool(logicalDevice, descriptorPool, nullptr);
 
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
+    vkDestroySemaphore(logicalDevice, computeSemaphore, nullptr);
+    vkDestroyFence(logicalDevice, frameFinishedFence, nullptr);
     DestroyFrameResources();
     vkDestroyCommandPool(logicalDevice, computeCommandPool, nullptr);
     vkDestroyCommandPool(logicalDevice, graphicsCommandPool, nullptr);
