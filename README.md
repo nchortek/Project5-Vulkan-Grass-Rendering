@@ -7,7 +7,9 @@ Vulkan Grass Rendering
   * [LinkedIn](https://www.linkedin.com/in/nathan-chortek/), [personal website](https://www.nathanchortek.com/)
 * Tested on: Windows 11, AMD Ryzen AI 9 HX 370, NVIDIA GeForce RTX 5090 Laptop GPU
 
-TODO: cover gif
+
+https://github.com/user-attachments/assets/b8591da3-b4d9-4e22-a18c-ea6e62ac6f03
+
 
 ## Features Implemented
 
@@ -29,7 +31,7 @@ Given a gravity direction, `D.xyz`, and the magnitude of acceleration, `D.w`, we
 determine the contribution of the gravity with respect to the front facing direction of the blade, `f`, as a term called the "front gravity". Front gravity is computed as 
 `gF = (1/4) * ||gE|| * f`. We can then determine the total gravity on the grass blade as `g = gE + gF`.
 
-TODO: gif
+![](img/gravity.png)
 
 **Recovery**
 
@@ -37,14 +39,16 @@ Recovery corresponds to the counter-force that brings our grass blade back into 
 force, we need to compare the current position of `v2` to its original position before simulation started, `iv2`. At the beginning of our simulation, `v1` and `v2` are 
 initialized to be a distance of the blade height along the `up` vector. Once we have `iv2`, we can compute the recovery forces as `r = (iv2 - v2) * stiffness`.
 
-TODO: gif
+![](img/recovery.png)
 
 **Wind**
 
 Animated Perlin noise is used to form a wind vector field, taking a blade's XZ position as input. Once we have a wind direction, we determine a wind alignment term based on how
 perpendicular the blade is to the wind direction, and total wind force (`w`) is calculated as `windDirection * windAlignment`.
 
-TODO: gif
+
+https://github.com/user-attachments/assets/73934da2-f6f8-481d-ad14-13c64d6ee679
+
 
 ### Culling
 
@@ -53,21 +57,27 @@ TODO: gif
 Blades that are parallel to the wind direction are barely visible, so we cull blades for which the dot product of the view direction and the blade's front face direction is less
 than `0.9`.
 
-TODO: gif
+
+https://github.com/user-attachments/assets/b8ccdd16-3a08-473c-9bb7-fc01750f25df
+
 
 **View-frustum**
 
 We also cull blades that are outside of the view-frustum, considering they won't show up in the frame anyway. To determine if a grass blade is in the view-frustum, we compare the
 visibility of three points: `v0, v2, and m`, where `m = (1/4)v0 * (1/2)v1 * (1/4)v2`. If all three points are outside of the view-frustum, we cull the grass blade.
 
-TODO: gif
+
+https://github.com/user-attachments/assets/70da9e6a-0fbb-448f-80c3-d648fadfa529
+
 
 **Distance**
 
 The further a blade is from the camera, the less visible it will be to the user. With this in mind, we place blades into buckets based on their distance from the camera, and apply
 stochastic culling at increasing rates proportional to distance from the camera.
 
-TODO: gif
+
+https://github.com/user-attachments/assets/ed543921-536b-4715-aa70-f219b727733f
+
 
 ## Performance Analysis
 
